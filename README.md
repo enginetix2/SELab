@@ -59,7 +59,7 @@ A config file for TLJH is located in the `config` directory. This is where you c
 
 If you'd like to pull in sample files to your Jupyter Lab, you can do so by clicking the links below:
 
-- [SELab Notebooks](http://localhost:8889/selab/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2Favianinc%2Fselab_notebooks.git&urlpath=lab%2Ftree%2Fselab_notebooks.git%2FREADME.md&branch=main)
+- [SELab Notebooks](http://localhost:8889/selab/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2Fenginetix2%2Fselab_notebooks.git&urlpath=lab%2Ftree%2Fselab_notebooks.git%2FREADME.md&branch=main)
 
 - [SysML v2 Applications and Examples](http://localhost:8889/selab/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FOpen-MBEE%2FSysML-v2-Applications-and-Examples&urlpath=lab%2Ftree%2FSysML-v2-Applications-and-Examples%2FJupyter-SysML+v2.ipynb&branch=main)
 

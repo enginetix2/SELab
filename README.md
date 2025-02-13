@@ -51,6 +51,8 @@ Wait for several minutes while the services start. Once ready:
 
 Log in using `admin:admin` credentials. If you see a 404 error, try starting and stopping the server. If the error persists, rerun `start.sh` to refresh the TLJH installation. The second run is significantly faster than the initial build.
 
+Tip: During the first load of the sysml API server on port 9000 it may take several minutes for the server to build. You actually have to hit the URL for the server to build so after the install is complete just hit the localhost:9000 URL and wait when its complete you will see --> Welcome to SysML 2.0 REST API implementation!
+
 ## Configurations
 
 A config file for TLJH is located in the `config` directory. This is where you can set the `base_url` (defaulted to `selab` in this install), memory, and CPU limits.

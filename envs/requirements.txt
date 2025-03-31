@@ -8,4 +8,3 @@ scipy
 pandas
 matplotlib
 numpy
-elyra[all]==4.0.0

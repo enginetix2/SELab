@@ -12,7 +12,7 @@ services:
     volumes:
       - postgresdbserver:/var/lib/postgresql/data
     networks:
-      - thenetwork
+      - digital_env
 
   sysmlapiserver:
     build:
@@ -25,7 +25,7 @@ services:
       - "9000:9000"
     restart: always
     networks:
-      - thenetwork
+      - digital_env
 
   tljh:
     build:
@@ -43,10 +43,10 @@ services:
       - ./updates:/tmp/updates/
       - user-data:/home
     networks:
-      - thenetwork
+      - digital_env
 
 networks:
-  thenetwork:
+  digital_env:
     external: true
 
 volumes:

@@ -58,7 +58,7 @@ start_docker() {
 
     # Check if the Docker network exists and create it if it does not
     if [ -z "$(docker network ls | grep thenetwork)" ]; then
-    docker network create thenetwork
+    docker network create digital_env
     fi
 
     # Check if the Docker volume exists and create it if it does not
@@ -173,9 +173,9 @@ install_sos_kernel() {
 # Call the functions
 start_docker
 install_tljh
-# build_env_kernels
+build_env_kernels
 update_sysmlv2_kernel
-# install_sos_kernel # broken :(
+install_sos_kernel # broken :(
 
 # Done!!!
 echo "Script completed successfully." | tee -a $LOGFILE

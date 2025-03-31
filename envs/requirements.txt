@@ -9,3 +9,10 @@ pandas
 matplotlib
 numpy
 elyra[all]
+sos
+sos-notebook
+sos-papermill
+sos-r
+sos-bash
+jupyterlab-sos
+sos-python

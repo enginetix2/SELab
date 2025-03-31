@@ -152,17 +152,30 @@ update_sysmlv2_kernel() {
 # }
 
 install_sos_kernel() {
+    echo "Installing SoS kernel..." | tee -a $LOGFILE
     docker compose exec tljh bash -c 'set -e;
-        python -m sos_notebook.install
+        # Install SoS notebook using mamba
+        sudo -E /opt/tljh/user/bin/mamba install -y \
+            sos \
+            sos-notebook \
+            sos-r \
+            sos-bash \
+            sos-python \
+            jupyterlab-sos \
+            ipykernel \
+            "jupyterlab>=4.0.0";
+
+        # Register SoS kernel
+        sudo -E /opt/tljh/user/bin/python -m sos_notebook.install'
     check_status "Installed SoS kernel"
 }
 
 # Call the functions
 start_docker
 install_tljh
-build_env_kernels
+# build_env_kernels
 update_sysmlv2_kernel
-install_sos_kernel # broken :(
+# install_sos_kernel # broken :(
 
 # Done!!!
 echo "Script completed successfully." | tee -a $LOGFILE

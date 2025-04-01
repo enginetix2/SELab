@@ -1,0 +1,37 @@
+FROM selab-tljh:latest
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y curl wget git
+
+# Install Miniconda
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh && \
+    bash /tmp/miniconda.sh -b -p /opt/conda && \
+    rm /tmp/miniconda.sh
+
+# Add conda to PATH
+ENV PATH="/opt/conda/bin:${PATH}"
+
+# Create a user for JupyterHub
+RUN useradd -m -s /bin/bash -N jupyter && \
+    echo "jupyter:jupyter" | chpasswd
+
+# Configure conda and install JupyterHub and Elyra
+RUN conda config --set auto_activate_base false && \
+    conda create -n jupyterhub python=3.10 -y && \
+    conda install -n jupyterhub -c conda-forge jupyterhub nodejs -y && \
+    conda install -n jupyterhub -c conda-forge "elyra[all]" -y
+
+# Configure JupyterHub
+RUN mkdir -p /etc/jupyterhub && \
+    echo 'c.Authenticator.admin_users = {"jupyter"}' > /etc/jupyterhub/jupyterhub_config.py && \
+    echo 'c.Authenticator.allowed_users = {"jupyter"}' >> /etc/jupyterhub/jupyterhub_config.py && \
+    echo 'c.Authenticator.check_common_password = False' >> /etc/jupyterhub/jupyterhub_config.py
+
+# Create entrypoint script
+RUN echo '#!/bin/bash \n\
+source /opt/conda/bin/activate jupyterhub \n\
+jupyterhub -f /etc/jupyterhub/jupyterhub_config.py --ip=0.0.0.0 --port=8000' > /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
+CMD ["/entrypoint.sh"]

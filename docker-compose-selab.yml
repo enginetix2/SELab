@@ -8,9 +8,9 @@ services:
       - POSTGRES_PASSWORD=mysecretpassword
       - POSTGRES_DB=sysml2
     ports:
-      - "5432:5432"
+      - "5433:5433"
     volumes:
-      - postgresdbserver:/var/lib/postgresql/data
+      - postgres_server_selab:/var/lib/postgresql/data
     networks:
       - digital_env
 
@@ -32,7 +32,7 @@ services:
       context: .
       dockerfile: Dockerfile.tljh
     privileged: true
-    # restart: always
+    restart: always
     ports:
       - 8889:80
     environment:
@@ -41,7 +41,7 @@ services:
       - ./config/config.yaml:/opt/tljh/config/config.yaml
       - ./envs:/tmp/envs/
       - ./updates:/tmp/updates/
-      - user-data:/home
+      - user_data_selab:/home
     networks:
       - digital_env
 
@@ -50,6 +50,8 @@ networks:
     external: true
 
 volumes:
-  postgresdbserver:
+  postgres_server_selab:
     external: true
-  user-data:
+  user_data_selab:
+    external: true
+  # This volume is used to persist user data across container restarts.

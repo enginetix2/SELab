@@ -57,24 +57,24 @@ check_status() {
 start_docker() {
 
     # Check if the Docker network exists and create it if it does not
-    if [ -z "$(docker network ls | grep thenetwork)" ]; then
+    if [ -z "$(docker network ls | grep digital_env)" ]; then
     docker network create digital_env
     fi
 
     # Check if the Docker volume exists and create it if it does not
-    if [ -z "$(docker volume ls | grep postgresdbserver)" ]; then
-    docker volume create postgresdbserver
+    if [ -z "$(docker volume ls | grep postgres_server_selab)" ]; then
+    docker volume create postgres_server_selab
     fi
 
     # Check if the Docker volume exists and create it if it does not
-    if [ -z "$(docker volume ls | grep user-data)" ]; then
-    docker volume create user-data
+    if [ -z "$(docker volume ls | grep user_data_selab)" ]; then
+    docker volume create user_data_selab
     fi
     
     echo "Starting docker-compose..." | tee -a $LOGFILE
     # docker image rm -f selab
-    docker compose up -d --build
-    check_status "docker-compose start"
+    docker compose -f docker-compose-selab.yml up -d --build
+    check_status "docker-compose -f docker-compose-selab.yml start"
 }
 
 # Install tljh
@@ -82,7 +82,7 @@ start_docker() {
 install_tljh() {
     AUTH_ADMIN=${AUTH_ADMIN:-"admin:admin"}
     echo "Create User: $AUTH_ADMIN" | tee -a $LOGFILE
-    docker compose exec tljh bash -c \
+    docker compose -f docker-compose-selab.yml exec tljh bash -c \
         "rm -rf /etc/skel/scratch/scratch && \
         curl -L https://tljh.jupyter.org/bootstrap.py \
         | sudo python3 - --show-progress-page --admin $AUTH_ADMIN --plugin git+https://github.com/kafonek/tljh-shared-directory \
@@ -94,7 +94,7 @@ install_tljh() {
 # the conda environments and the jupyter kernel.
 build_env_kernels() {
     echo "Building environment kernels..." | tee -a $LOGFILE
-    docker compose exec tljh bash -c 'set -e; 
+    docker compose -f docker-compose-selab.yml exec tljh bash -c 'set -e; 
         for env_file in $(ls /tmp/envs/*.yaml); do
             env_name=$(basename $env_file .yaml);
             echo "Processing environment: $env_name";
@@ -114,47 +114,26 @@ build_env_kernels() {
 # Update sysmlv2 kernel model publish location
 update_sysmlv2_kernel() {
     echo "Updating the Sysmlv2 kernel model publishing location" | tee -a $LOGFILE
-    docker compose exec tljh bash -c "set -e; \
+    docker compose -f docker-compose-selab.yml exec tljh bash -c "set -e; \
         sudo sed -i 's|\"ISYSML_API_BASE_PATH\": \"http://sysml2.intercax.com:9000\"|\"ISYSML_API_BASE_PATH\": \"http://sysmlapiserver:9000\"|g' /opt/tljh/user/envs/sysmlv2/share/jupyter/kernels/sysml/kernel.json"
     check_status "Sysmlv2 model publish location"
 }
 
-# # Install sos kernel
-# install_sos_kernel() {
-#     echo "Installing SoS kernel..." | tee -a $LOGFILE
-#     docker compose exec tljh bash -c 'set -e;
-#         # 1) Attempt to install/upgrade to Python 3.10
-#         #    If pinned or if there's a conflict, this could fail or skip.
-#         sudo -E /opt/tljh/user/bin/mamba install -y --update-deps python=3.10 || echo "Could not switch to Python 3.10 (pinned or conflict). Continuing..."
-
-#         # 2) Now install SoS and all its dependencies
-#         sudo -E /opt/tljh/user/bin/mamba install -y \
-#             sos \
-#             sos-notebook \
-#             sos-r \
-#             sos-bash \
-#             sos-python \
-#             jupyterlab-sos \
-#             ipykernel
-
-#         # 3) Register kernels
-#         sudo -E /opt/tljh/user/bin/python -m ipykernel install --user
-#         sudo -E /opt/tljh/user/bin/sos register Python
-
-#         # 4) Install and register R kernel
-#         sudo -E /opt/tljh/user/bin/Rscript -e "install.packages(\"IRkernel\", repos=\"http://cran.r-project.org\")"
-#         sudo -E /opt/tljh/user/bin/Rscript -e "IRkernel::installspec(user = FALSE)"
-#         sudo -E /opt/tljh/user/bin/sos register R
-
-#         # 5) Final SoS notebook install step
-#         sudo -E /opt/tljh/user/bin/python -m sos_notebook.install
-#     check_status "Installed SoS kernel"
-# }
+start_docker_elyra() {
+    echo "Starting Elyra-only container..." | tee -a $LOGFILE
+    docker compose -f docker-compose-elyra.yml up -d --build
+    check_status "Elyra-only server"
+}
 
 install_sos_kernel() {
+    # drop levels of ipython and metakernel to avoid conflicts with SoS
     echo "Installing SoS kernel..." | tee -a $LOGFILE
-    docker compose exec tljh bash -c 'set -e;
-        # Install SoS notebook using mamba
+    docker compose -f docker-compose-selab.yml exec tljh bash -c 'set -e;
+        # Install Elyra and its dependencies
+        #sudo pip install --upgrade jupyterlab==4.4.0rc0 
+        #sudo pip install --upgrade elyra --pre
+
+        # Install SoS notebook and compatible IPython version using mamba
         sudo -E /opt/tljh/user/bin/mamba install -y \
             sos \
             sos-notebook \
@@ -163,10 +142,13 @@ install_sos_kernel() {
             sos-python \
             jupyterlab-sos \
             ipykernel \
-            "jupyterlab>=4.0.0";
+            "ipython<8.24" \
+            "metakernel>=0.30.1" \
+            jupyterlab-git;
 
-        # Register SoS kernel
-        sudo -E /opt/tljh/user/bin/python -m sos_notebook.install'
+        # Register SoS kernels
+        sudo -E /opt/tljh/user/bin/python -m sos_notebook.install;
+        sudo -E /opt/tljh/user/bin/python -m calysto_bash install;'
     check_status "Installed SoS kernel"
 }
 
@@ -175,7 +157,8 @@ start_docker
 install_tljh
 build_env_kernels
 update_sysmlv2_kernel
-install_sos_kernel # broken :(
+install_sos_kernel
+start_docker_elyra
 
 # Done!!!
 echo "Script completed successfully." | tee -a $LOGFILE

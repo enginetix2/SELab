@@ -1,0 +1,15 @@
+version: '3'
+services:
+  tljh_elyra:
+    build:
+      context: .
+      dockerfile: Dockerfile.elyra
+    container_name: tljh_elyra
+    ports:
+      - "9999:8000"
+    volumes:
+      - user_data_elyra:/home/jupyter
+    restart: unless-stopped
+
+volumes:
+  user_data_elyra:

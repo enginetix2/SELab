@@ -10,3 +10,4 @@ matplotlib
 numpy
 elyra[all]
 bash_kernel
+jupyterlab4_sysmlv2

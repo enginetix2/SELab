@@ -1,10 +1,10 @@
-base_url: /selab/
+base_url: /
 limits:
   memory: 8G
   cpu: 4
 services:
   cull:
-    enabled: false
+    enabled: true
 user_environment:
   default_app: jupyterlab
 users:

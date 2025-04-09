@@ -75,6 +75,11 @@ start_docker() {
     # docker image rm -f selab
     docker compose -f docker-compose-selab.yml up -d --build
     check_status "docker-compose -f docker-compose-selab.yml start"
+
+    # Ensure logs are visible in Docker Desktop
+    echo "Configuring Docker logs to be visible in Docker Desktop..." | tee -a $LOGFILE
+    docker compose -f docker-compose-selab.yml logs -f tljh | tee -a $LOGFILE &
+
 }
 
 # Install tljh
@@ -88,34 +93,24 @@ install_tljh() {
         | sudo python3 - --show-progress-page --admin $AUTH_ADMIN --plugin git+https://github.com/kafonek/tljh-shared-directory \
         --user-requirements-txt-url https://raw.githubusercontent.com/enginetix2/SELab/refs/heads/main/envs/requirements_elyra.txt"
     check_status "Installed tljh"
+
 }
 
-# This function loops through all yaml files in the /tmp/envs and builds 
-# the conda environments and the jupyter kernel.
-build_env_kernels() {
-    echo "Building environment kernels..." | tee -a $LOGFILE
-    docker compose -f docker-compose-selab.yml exec tljh bash -c 'set -e; 
-        for env_file in $(ls /tmp/envs/*.yaml); do
-            env_name=$(basename $env_file .yaml);
-            echo "Processing environment: $env_name";
-            echo "List of environments:";
-            sudo -E /opt/tljh/user/bin/mamba info --envs;
-            if [[ $(sudo -E /opt/tljh/user/bin/mamba info --envs | grep -w $env_name) ]]; then
-                echo "Updating environment $env_name";
-                sudo -E /opt/tljh/user/bin/mamba env update --name $env_name -f $env_file
-            else
-                echo "Creating environment $env_name";
-                sudo -E /opt/tljh/user/bin/mamba env create -f $env_file
-            fi
-        done && sudo -E /opt/tljh/user/bin/mamba env update -f /tmp/updates/update_kernels.yaml'
-    check_status "Build environment kernels"
+# Install Sysmlv2 kernel from conda-forge
+# Purpose: This function installs the Sysmlv2 kernel from the conda-forge channel inside the TLJH Docker container.
+# Prerequisites: The TLJH container must be running, and the mamba package manager must be available in the environment.
+install_sysmlv2_kernel() {
+    echo "Installing Sysmlv2 kernel..." | tee -a $LOGFILE
+    docker compose -f docker-compose-selab.yml exec tljh bash -c "set -e; \
+        sudo -E /opt/tljh/user/bin/mamba install -y conda-forge::jupyter-sysml-kernel && \
+        echo 'SUCCESS: Sysmlv2 kernel installation' || { echo 'FAILED: Sysmlv2 kernel installation'; exit 1; }"
 }
 
 # Update sysmlv2 kernel model publish location
 update_sysmlv2_kernel() {
     echo "Updating the Sysmlv2 kernel model publishing location" | tee -a $LOGFILE
     docker compose -f docker-compose-selab.yml exec tljh bash -c "set -e; \
-        sudo sed -i 's|\"ISYSML_API_BASE_PATH\": \"http://sysml2.intercax.com:9000\"|\"ISYSML_API_BASE_PATH\": \"http://sysmlapiserver:9000\"|g' /opt/tljh/user/envs/sysmlv2/share/jupyter/kernels/sysml/kernel.json"
+        sudo sed -i 's|\"ISYSML_API_BASE_PATH\": \"http://sysml2.intercax.com:9000\"|\"ISYSML_API_BASE_PATH\": \"http://sysmlapiserver:9000\"|g' /opt/tljh/user/share/jupyter/kernels/sysml/kernel.json"
     check_status "Sysmlv2 model publish location"
 }
 
@@ -140,7 +135,7 @@ install_bash_kernel() {
 # Call the functions
 start_docker
 install_tljh
-build_env_kernels
+install_sysmlv2_kernel
 update_sysmlv2_kernel
 install_r_kernel
 install_bash_kernel

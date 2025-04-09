@@ -9,3 +9,4 @@ pandas
 matplotlib
 numpy
 elyra[all]
+bash_kernel

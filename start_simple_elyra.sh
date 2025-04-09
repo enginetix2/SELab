@@ -90,6 +90,27 @@ install_tljh() {
     check_status "Installed tljh"
 }
 
+# This function loops through all yaml files in the /tmp/envs and builds 
+# the conda environments and the jupyter kernel.
+build_env_kernels() {
+    echo "Building environment kernels..." | tee -a $LOGFILE
+    docker compose -f docker-compose-selab.yml exec tljh bash -c 'set -e; 
+        for env_file in $(ls /tmp/envs/*.yaml); do
+            env_name=$(basename $env_file .yaml);
+            echo "Processing environment: $env_name";
+            echo "List of environments:";
+            sudo -E /opt/tljh/user/bin/mamba info --envs;
+            if [[ $(sudo -E /opt/tljh/user/bin/mamba info --envs | grep -w $env_name) ]]; then
+                echo "Updating environment $env_name";
+                sudo -E /opt/tljh/user/bin/mamba env update --name $env_name -f $env_file
+            else
+                echo "Creating environment $env_name";
+                sudo -E /opt/tljh/user/bin/mamba env create -f $env_file
+            fi
+        done && sudo -E /opt/tljh/user/bin/mamba env update -f /tmp/updates/update_kernels.yaml'
+    check_status "Build environment kernels"
+}
+
 # Update sysmlv2 kernel model publish location
 update_sysmlv2_kernel() {
     echo "Updating the Sysmlv2 kernel model publishing location" | tee -a $LOGFILE
@@ -98,10 +119,31 @@ update_sysmlv2_kernel() {
     check_status "Sysmlv2 model publish location"
 }
 
+# Install R kernel
+install_r_kernel() {
+    echo "Installing R kernel..." | tee -a $LOGFILE
+    docker compose -f docker-compose-selab.yml exec tljh bash -c "set -e; \
+        sudo apt-get update && sudo apt-get install -y r-base && \
+        sudo -E /opt/tljh/user/bin/mamba install -y r-irkernel && \
+        sudo -E /opt/tljh/user/bin/mamba env update -f /tmp/updates/update_kernels.yaml"
+    check_status "R kernel installation"
+}
+
+# Install bash kernel
+install_bash_kernel() {
+    echo "Installing bash kernel..." | tee -a $LOGFILE
+    docker compose -f docker-compose-selab.yml exec tljh bash -c "set -e; \
+        sudo -E /opt/tljh/user/bin/python -m bash_kernel.install"
+    check_status "Bash kernel installation"
+}
+
 # Call the functions
 start_docker
 install_tljh
+build_env_kernels
 update_sysmlv2_kernel
+install_r_kernel
+install_bash_kernel
 
 # Done!!!
 echo "Script completed successfully." | tee -a $LOGFILE

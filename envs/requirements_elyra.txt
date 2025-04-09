@@ -1,0 +1,11 @@
+rise
+plotly
+ipydrawio
+ipydrawio-export
+ipywidgets
+ipyparallel
+scipy
+pandas
+matplotlib
+numpy
+elyra[all]

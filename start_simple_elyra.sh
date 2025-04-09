@@ -98,18 +98,10 @@ update_sysmlv2_kernel() {
     check_status "Sysmlv2 model publish location"
 }
 
-install_elyra() {
-    echo "Installing Elyra..." | tee -a $LOGFILE
-    docker compose -f docker-compose-selab.yml exec tljh bash -c "set -e; \
-        pip install elyra[all] --no-cache-dir"
-    check_status "Installed Elyra"
-}
-
 # Call the functions
 start_docker
 install_tljh
 update_sysmlv2_kernel
-install_elyra
 
 # Done!!!
 echo "Script completed successfully." | tee -a $LOGFILE

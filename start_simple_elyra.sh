@@ -72,6 +72,14 @@ install_tljh() {
     check_status "TLJH installation"
 }
 
+# Install Elyra
+install_elyra() {
+    echo "Installing Elyra..." | tee -a $LOGFILE
+    docker compose -f docker-compose-selab.yml exec tljh bash -c "set -e; \
+        sudo -E /opt/tljh/user/bin/python3 -m pip install --upgrade elyra --pre"
+    check_status "Elyra installation"
+}
+
 # Install SysMLv2 Kernel
 install_sysmlv2_kernel() {
     echo "Installing SysMLv2 kernel..." | tee -a $LOGFILE
@@ -106,12 +114,49 @@ install_bash_kernel() {
     check_status "Bash kernel installation"
 }
 
+# Install Scilab Kernel
+install_scilab_kernel() {
+    echo "Installing Scilab kernel..." | tee -a $LOGFILE
+    docker compose -f docker-compose-selab.yml exec tljh bash -c "set -e; \
+        # Update and install required dependencies
+        sudo apt-get update && sudo apt-get install -y xvfb x11vnc fluxbox net-tools \
+        git-core git procps nano build-essential gfortran \
+        libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev \
+        libbz2-dev libffi-dev python3-pip unzip lsb-release software-properties-common \
+        curl wget rsync mesa-utils && \
+        \
+        # Add Mesa drivers for better Scilab compatibility
+        sudo add-apt-repository ppa:kisak/kisak-mesa -y && \
+        sudo apt-get update && sudo apt-get upgrade -y && \
+        \
+        # Install Scilab
+        cd /tmp && \
+        wget https://www.scilab.org/download/6.0.2/scilab-6.0.2.bin.linux-x86_64.tar.gz && \
+        tar xf scilab-6.0.2.bin.linux-x86_64.tar.gz && \
+        echo 'SCILAB_EXECUTABLE=/tmp/scilab-6.0.2/bin/scilab-adv-cli' | sudo tee -a /etc/environment && \
+        export SCILAB_EXECUTABLE=/tmp/scilab-6.0.2/bin/scilab-adv-cli && \
+        \
+        # Install Scilab kernel
+        sudo -E /opt/tljh/user/bin/python3 -m pip install --upgrade pip && \
+        sudo -E /opt/tljh/user/bin/python3 -m pip install scilab-kernel && \
+        \
+        # Install Coselica toolbox
+        /tmp/scilab-6.0.2/bin/scilab-cli -e 'atomsRepositoryAdd([\"http://atoms.scilab.org/6.0\"]); exit;' -nb && \
+        /tmp/scilab-6.0.2/bin/scilab-cli -e 'atomsInstall(\"coselica\"); exit;' -nb && \
+        \
+        # Clean up temporary files
+        rm -rf /tmp/scilab-6.0.2.bin.linux-x86_64.tar.gz"
+    check_status "Scilab kernel installation"
+}
+
 # Main Execution
 start_docker
 install_tljh
+install_elyra
 install_sysmlv2_kernel
 update_sysmlv2_kernel
 install_r_kernel
 install_bash_kernel
+install_scilab_kernel
 
 echo "Script completed successfully." | tee -a $LOGFILE
